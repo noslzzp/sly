@@ -113,4 +113,4 @@ Specification text licensed under [CC-BY-4.0](LICENSE) — adopters may
 freely use, adapt, and redistribute the spec provided they attribute
 the original.
 
-Created by [@noslzzp](https://github.com/noslzzp).
+Created by [Keith Basil](https://www.linkedin.com/in/keithbasil/) — [@noslzzp](https://github.com/noslzzp) on GitHub.
