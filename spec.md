@@ -84,6 +84,10 @@ If any check fails, fix before showing the flow. Do not show invalid flows and a
 
 Each example pairs a user's natural-language ask (caption) with the correct first-shot emission. Pattern-match against these.
 
+Step ids are **kebab-case**, never snake_case or camelCase. Multi-word ids look like `judge-urgency`, `mark-done-with-mention`, `compose-briefing` — not `judge_urgency` or `markDoneWithMention`. The §9 regex `^[a-z][a-z0-9-]*$` makes this normative.
+
+Each example below shows only the JSON for brevity. **Always emit the matching mermaid diagram alongside** per §4 — JSON and mermaid travel together, never one without the other.
+
 ### "Triage my overnight email so I land on a clean inbox with drafts for the urgent ones."
 
 ```json
@@ -369,8 +373,9 @@ A flow is valid iff:
   - `ask`: `to` (`"llm"` | `"user"`, default `"llm"`), `in` (object), `out` (string), `next` (string).
   - `if`: `then` (string, required), `else` (string, required).
   - `loop`: `body` (string, required), `next` (string).
-  - `end`: `out` (string, optional). `end` itself is the boolean `true`.
+  - `end`: `out` (string, optional). `end` itself is the boolean `true` — `end: false` is **rejected**. To skip a step and continue, omit it from the flow or restructure surrounding branches; a body-reachable step that omits `next` already returns to its loop via the §1 implicit-body-return rule.
 - `loop` value object: exactly one of `{over, as}`, `{while, max}`, `{times}`.
+- **No built-in variables.** v1 has no environmental built-ins (current user, current time, working directory, etc.). Every `{{...}}` reference and every variable in an `if` or `while` expression must come from a prior step's `out` or from run input. If the user's intent depends on environmental context, emit a `do` step that retrieves it as the first step of the flow — e.g., `{ "do": "github.user.me", "out": "me", "next": "..." }`.
 
 If the user's request would require violating any rule above, refuse and propose a v1-valid alternative.
 
