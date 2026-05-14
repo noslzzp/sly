@@ -64,8 +64,27 @@ For a project that authors Sly flows often, drop this line into your
 ```markdown
 This project authors Sly workflows. Before drafting one, read
 https://github.com/noslzzp/sly/blob/main/spec.md (or pin to a tag for
-stability: https://github.com/noslzzp/sly/blob/v1/spec.md).
+stability: https://github.com/noslzzp/sly/blob/v1.5/spec.md).
 ```
+
+## Using Sly with frontier LLMs
+
+Sly is a spec, not a magic prompt. Any model that actually loads and
+reads the spec produces compliant flows. Tested May 2026:
+
+- **Claude (Sonnet/Opus):** point at the URL. First-shot compliant —
+  JSON, mermaid, and walked mock-run.
+- **GPT (Codex / 4-class):** point at the URL. First-shot compliant.
+- **Gemini:** **paste the spec content directly into the prompt.**
+  URL-fetch in some Gemini surfaces returns hallucinated output (a
+  state-machine DSL Gemini invents instead of Sly). Pasted in-context,
+  Gemini is fully compliant including the §5 mock-run protocol.
+
+The spec is ~17KB of markdown — small enough to drop into any frontier
+model's context. When in doubt, **paste over fetch**.
+
+If a model emits anything other than JSON with `"slai": "1"`, it didn't
+read the spec. Re-prompt with the spec content inline.
 
 ## What's novel
 
@@ -82,10 +101,11 @@ consults.
 
 ## Status
 
-v1 specification. No public reference engine yet — the spec is complete
-and self-contained for authoring + mock-run via any LLM that supports
-markdown context. A reference renderer (mermaid → SVG with iconography)
-and a runtime engine are next.
+v1.5 specification, validated across three frontier vendors (see above).
+No public reference engine yet — the spec is complete and self-contained
+for authoring + mock-run via any LLM that supports markdown context.
+A reference renderer (mermaid → SVG with iconography) and a runtime
+engine are the next milestones.
 
 ## License
 
