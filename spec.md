@@ -7,7 +7,7 @@ Your job, when this spec is in your context:
 1. When the user describes work in English, emit a valid Sly JSON flow.
 2. Render the flow as a mermaid diagram alongside the JSON.
 3. Walk the run conversationally — playing tools and answering `ask` steps yourself, asking the user to confirm side-effects.
-4. Track the variable bag visibly turn-by-turn.
+4. Track the variable scope visibly turn-by-turn.
 5. Refuse v2+ features with a v1-valid alternative.
 
 This spec is **Sly v1**. Every flow you emit must declare `"slai": "1"`.
@@ -50,7 +50,7 @@ A step object contains **exactly one** of these verb keys:
 `if` conditions and `while` expressions use this tiny grammar:
 
 - Literals: numbers, `'single-quoted strings'`, `true`, `false`, `null`
-- Variables: bare identifiers reference the bag (`verdict`, `inbox`)
+- Variables: bare identifiers reference the scope (`verdict`, `inbox`)
 - Field access: dotted (`msg.subject`, `inbox.length`)
 - Operators: `==` `!=` `<` `<=` `>` `>=` `&&` `||` `!`
 - Parens for grouping
@@ -60,7 +60,7 @@ Variable interpolation in strings: `{{varname}}` or `{{var.field}}`. Used in `as
 
 **Implicit body return:** a step reachable from a `loop`'s `body` that omits `next` returns to the loop after running. Use this — it's the natural shape, and it removes the noop-terminus step.
 
-**Bag overwrites in `over` loops:** body-step `out` values are overwritten each iteration. The bag at run-end shows only the last iteration's bindings. To accumulate results across iterations, push them into a tool that maintains state (e.g., `memory.append`), or call a tool whose result is already the aggregate. Do not design flows that "produce" a list of results purely in the bag.
+**Scope overwrites in `over` loops:** body-step `out` values are overwritten each iteration. The scope at run-end shows only the last iteration's bindings. To accumulate results across iterations, push them into a tool that maintains state (e.g., `memory.append`), or call a tool whose result is already the aggregate. Do not design flows that "produce" a list of results purely in the scope.
 
 ---
 
@@ -250,18 +250,18 @@ When the user says "run it" (or equivalent):
 1. **Announce.** *"Running `<id>` — intent: <intent>."* Echo the diagram with the start node highlighted (in mermaid, append `:::active` to the node id and add `classDef active stroke:#f80,stroke-width:3px` at the bottom of the block).
 
 2. **Walk steps in order.** For each step:
-   - **`do`**: *"Step `<id>` would call `<tool>` with `<args>`. Want me to imagine the result, or will you provide one?"* If imagine: invent a plausible JSON value, write it to the bag, show the bag. If user provides: accept and write.
-   - **`ask` to llm**: Generate the response in-line as yourself. Capture under `out`. Show the bag.
+   - **`do`**: *"Step `<id>` would call `<tool>` with `<args>`. Want me to imagine the result, or will you provide one?"* If imagine: invent a plausible JSON value, write it to the scope, show the scope. If user provides: accept and write.
+   - **`ask` to llm**: Generate the response in-line as yourself. Capture under `out`. Show the scope.
    - **`ask` to user**: **Halt.** Ask the user the prompt verbatim (after interpolation). Wait. Capture their answer under `out`.
-   - **`if`**: Evaluate the expression against the current bag. Announce the branch: *"`verdict == 'yes'` → true → going to `draft`."*
+   - **`if`**: Evaluate the expression against the current scope. Announce the branch: *"`verdict == 'yes'` → true → going to `draft`."*
    - **`loop`**: Announce the iteration plan. For `over`: name the binding and the list length. For `while`: name the condition and the max. For `times`: name the count. Run `body` per iteration; on exit, advance to `next`.
    - **`end`**: Stop. If `out` is set, present the named variable as the final result.
 
-3. **Maintain the bag visibly.** After every step, show a compact snapshot:
+3. **Maintain the scope visibly.** After every step, show a compact snapshot:
    ```
-   bag: { inbox: [3 items], msg: {id: "m1", subject: "Q3 plan"}, verdict: "yes" }
+   scope: { inbox: [3 items], msg: {id: "m1", subject: "Q3 plan"}, verdict: "yes" }
    ```
-   Truncate large values to `[N items]` or `"...truncated..."`. The bag is the audit trail; never hide it.
+   Truncate large values to `[N items]` or `"...truncated..."`. The scope is the audit trail; never hide it.
 
 4. **Re-render the diagram** at meaningful state transitions — start, branch decisions, loop iteration boundaries, and the final state — with the current node highlighted. Avoid re-rendering inside tight loop bodies; a diagram emitted after every step in a 4-iteration × 4-step run is visual spam, not signal.
 
@@ -269,7 +269,7 @@ When the user says "run it" (or equivalent):
 
 Stop conditions:
 
-- Reach an `end` step → present the final summary and the full bag.
+- Reach an `end` step → present the final summary and the full scope.
 - User says "stop" → halt and ask what to do next.
 - A step would require credentials or a tool result you cannot plausibly fake → stop, name what's missing, ask the user to supply it.
 
