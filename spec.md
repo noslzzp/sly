@@ -58,7 +58,7 @@ A step object contains **exactly one** of these verb keys:
 
 Variable interpolation in strings: `{{varname}}` or `{{var.field}}`. Used in `ask` prompts, `with` argument values, and `in` injections.
 
-**Implicit body return:** a step reachable from a `loop`'s `body` that omits `next` returns to the loop after running. Use this — it's the natural shape, and it removes the noop-terminus step.
+**Implicit body return:** a step reachable from a `loop`'s `body` that omits `next` returns to the loop after running. Use this — it's the natural shape, and it removes the noop-terminus step. **`end` always terminates the entire run, never just the iteration.** To skip a loop iteration cleanly (e.g., from an `if`-branch that decides "don't save this one"), point the branch at a step that has a verb (`do` or `ask`) and omits `next` — implicit body return handles the rest. A logging `do` (`{ "do": "memory.append", "with": { "list": "skipped", "item": "{{event.id}}" } }`) is the natural shape when no side effect is needed; never use `end: true` to mean "skip this iteration."
 
 **Scope overwrites in `over` loops:** body-step `out` values are overwritten each iteration. The scope at run-end shows only the last iteration's bindings. To accumulate results across iterations, push them into a tool that maintains state (e.g., `memory.append`), or call a tool whose result is already the aggregate. Do not design flows that "produce" a list of results purely in the scope.
 
@@ -396,6 +396,7 @@ Templates for shape; vary the prose freely. Match the user's register.
 | Variable referenced before any step writes it | Add the producing step earlier, or route via `in` from run input. |
 | `intent` shorter than 6 words or generic ("Do email stuff") | Push back — vague intent breaks recovery. Ask for a sharper sentence (Pattern E). |
 | `loop` body step has its own `end` | Move the `end` to the step that the `loop`'s `next` points at. A body cannot terminate the run. |
+| `end: true` reached from an `if`-branch inside a loop, intending to skip the iteration | `end: true` terminates the **entire run**, not the iteration. Replace with a body-reachable step that has a verb and omits `next`: `{ "do": "memory.append", "with": { "list": "skipped", "item": "{{event.id}}" } }`. Implicit body return then advances the run to the next iteration. Tell: the mermaid shows `skip -. return .-> loop` while the JSON has `end: true` — diagram and JSON disagree because the diagram captures the design intent that the JSON encoded wrong. |
 | Arithmetic or string concat in an `if` condition | Add a `do` step that calls a tool returning the boolean, then `if` on that variable. |
 
 ---
