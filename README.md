@@ -1,4 +1,4 @@
-# Sly
+# SLAI - Simple Loops/flows for AI.  aka "Sly".
 
 **Workflows an LLM can write and you can read.**
 
