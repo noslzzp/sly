@@ -86,7 +86,7 @@ Each example pairs a user's natural-language ask (caption) with the correct firs
 
 Step ids are **kebab-case**, never snake_case or camelCase. Multi-word ids look like `judge-urgency`, `mark-done-with-mention`, `compose-briefing` — not `judge_urgency` or `markDoneWithMention`. The §9 regex `^[a-z][a-z0-9-]*$` makes this normative.
 
-Each example below shows only the JSON for brevity. **Always emit the matching mermaid diagram alongside** per §4 — JSON and mermaid travel together, never one without the other.
+Each example below shows the JSON paired with its mermaid diagram — **emit them together**, never one without the other. The §4 shape rules are non-negotiable: a diagram of all rectangles is not a Sly diagram, regardless of how informative the labels are.
 
 ### "Triage my overnight email so I land on a clean inbox with drafts for the urgent ones."
 
@@ -108,6 +108,26 @@ Each example below shows only the JSON for brevity. **Always emit the matching m
 }
 ```
 
+```mermaid
+flowchart TD
+  fetch[fetch: mail.list_unread]
+  scan[/scan: loop over inbox/]
+  judge(judge: Is subject urgent?)
+  route{route: verdict == 'yes'}
+  draft(draft: Draft a reply)
+  file[file: mail.archive]
+  done((done))
+
+  fetch --> scan
+  scan -. body .-> judge
+  judge --> route
+  route -- yes --> draft
+  route -- no --> file
+  draft -. return .-> scan
+  file -. return .-> scan
+  scan --> done
+```
+
 ### "Give me a 5-bullet briefing of today's calendar and VIP mail."
 
 ```json
@@ -124,6 +144,18 @@ Each example below shows only the JSON for brevity. **Always emit the matching m
     "done":     { "end": true, "out": "briefing" }
   }
 }
+```
+
+```mermaid
+flowchart TD
+  calendar[calendar: calendar.today]
+  vips[vips: mail.from_vips]
+  compose(compose: Write a 5-bullet briefing)
+  done((done))
+
+  calendar --> vips
+  vips --> compose
+  compose --> done
 ```
 
 ### "Wait for CI to go green and summarize the deploy outcome — give up after 30 checks."
@@ -145,6 +177,19 @@ Each example below shows only the JSON for brevity. **Always emit the matching m
 }
 ```
 
+```mermaid
+flowchart TD
+  check[/check: loop while status != 'green', max 30/]
+  probe[probe: ci.status]
+  report(report: Summarize the deploy outcome)
+  done((done))
+
+  check -. body .-> probe
+  probe -. return .-> check
+  check --> report
+  report --> done
+```
+
 ### "Draft a reply but let me approve before sending."
 
 ```json
@@ -164,6 +209,22 @@ Each example below shows only the JSON for brevity. **Always emit the matching m
     "done":    { "end": true }
   }
 }
+```
+
+```mermaid
+flowchart TD
+  compose(compose: Draft an email)
+  review{{review: Approve this draft?}}
+  decide{decide: ok == 'yes'}
+  send[send: mail.send]
+  abort((abort))
+  done((done))
+
+  compose --> review
+  review --> decide
+  decide -- yes --> send
+  decide -- no --> abort
+  send --> done
 ```
 
 `to: "user"` parks the run for the user to answer. You, the LLM, do **not** answer your own `to: "user"` steps. Ask the user and wait.
@@ -190,11 +251,30 @@ Each example below shows only the JSON for brevity. **Always emit the matching m
 }
 ```
 
+```mermaid
+flowchart TD
+  init[init: memory.get]
+  rounds[/rounds: loop 3 times/]
+  expand(expand: Useful next question?)
+  save[save: memory.put]
+  done((done))
+
+  init --> rounds
+  rounds -. body .-> expand
+  expand -. return .-> rounds
+  rounds --> save
+  save --> done
+```
+
 `expand` omits `next` to implicitly return to the `rounds` loop. This is the natural shape — body steps that *are* the body of the loop do not need a terminus.
 
 ---
 
 ## 4. Diagram emission — mermaid
+
+**The shape is not decorative. The shape is the verb.** A diagram where every node is a rectangle is not a Sly diagram, even if the labels say "loop" or "end" or "user." A reader must be able to identify the verb of every step from shape alone, without reading any labels. Type-tag label suffixes (e.g., `for-each-event loop`, `done end`, `review-brief user`) do **not** substitute for using the correct shape syntax — they are a tell that the spec was read but not followed.
+
+If you cannot reliably render the shape rules below in the surface you're emitting to, **render no diagram and say so explicitly** — a half-blind diagram is worse than no diagram, because it advertises spec compliance while quietly breaking the diagram-as-spec contract that makes Sly worth using.
 
 Emit a `flowchart TD` block alongside every flow. Both JSON and mermaid travel together; either alone is half-blind.
 
@@ -217,31 +297,7 @@ Edges:
 
 Labels are short — usually the step id plus the verb's payload (tool name, prompt fragment, condition, loop spec). Truncate long prompts to ~6 words.
 
-### Worked transform — morning triage
-
-For the `morning-triage` flow above, emit:
-
-```mermaid
-flowchart TD
-  fetch[fetch: mail.list_unread]
-  scan[/scan: loop over inbox/]
-  judge(judge: Is subject urgent?)
-  route{route: verdict == 'yes'}
-  draft(draft: Draft a reply)
-  file[file: mail.archive]
-  done((done))
-
-  fetch --> scan
-  scan -. body .-> judge
-  judge --> route
-  route -- yes --> draft
-  route -- no --> file
-  draft -. return .-> scan
-  file -. return .-> scan
-  scan --> done
-```
-
-Note: `draft` and `file` both implicitly return to `scan` because they omit `next` and are reachable from the loop body.
+The §3 examples each show the JSON paired with its mermaid block — those are the worked transforms. Read them as the few-shot training set for shape compliance. Note: in §3's `morning-triage`, both `draft` and `file` implicitly return to `scan` because they omit `next` and are reachable from the loop body — that's why both have `-. return .->` edges back to the loop, not solid `next` arrows.
 
 ---
 
