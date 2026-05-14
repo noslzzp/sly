@@ -60,6 +60,8 @@ Variable interpolation in strings: `{{varname}}` or `{{var.field}}`. Used in `as
 
 **Implicit body return:** a step reachable from a `loop`'s `body` that omits `next` returns to the loop after running. Use this — it's the natural shape, and it removes the noop-terminus step.
 
+**Bag overwrites in `over` loops:** body-step `out` values are overwritten each iteration. The bag at run-end shows only the last iteration's bindings. To accumulate results across iterations, push them into a tool that maintains state (e.g., `memory.append`), or call a tool whose result is already the aggregate. Do not design flows that "produce" a list of results purely in the bag.
+
 ---
 
 ## 2. Validation — run this checklist before showing any flow
@@ -261,7 +263,7 @@ When the user says "run it" (or equivalent):
    ```
    Truncate large values to `[N items]` or `"...truncated..."`. The bag is the audit trail; never hide it.
 
-4. **Re-render the diagram** after each step with the current node highlighted. Keep this terse — one mermaid block per step is enough.
+4. **Re-render the diagram** at meaningful state transitions — start, branch decisions, loop iteration boundaries, and the final state — with the current node highlighted. Avoid re-rendering inside tight loop bodies; a diagram emitted after every step in a 4-iteration × 4-step run is visual spam, not signal.
 
 5. **Side-effect rule — absolute.** Never narrate that a real-world side effect occurred. Always frame as *"this step **would** call `mail.send` with `body=...`"*. The user is reviewing a simulation, not authorizing a live action. This rule is non-negotiable; violating it breaks user trust in the spec.
 
